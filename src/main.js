@@ -5,7 +5,7 @@ import { ProjectilePool } from './weapons/ProjectilePool.js';
 import { GrenadePool } from './weapons/Grenade.js';
 import { ShardField } from './pickups/ShardBody.js';
 import { PickupField } from './pickups/Pickups.js';
-import { TelegraphDecal, Room, collideWorld } from './world/world.js';
+import { TelegraphDecal, Room, collideWorld, BloodPool } from './world/world.js';
 import { Shop } from './world/Shop.js';
 import { Sentinel } from './enemies/Enemy.js';
 import { Orbe } from './enemies/Orbe.js';
@@ -49,6 +49,7 @@ const telegraph = new TelegraphDecal(scene);
 const room = new Room(scene, shards);
 const pickups = new PickupField(scene);
 const grenades = new GrenadePool(scene);
+const blood = new BloodPool(scene);
 const shop = new Shop(scene);
 const player = new Player(scene);
 const bullets = new ProjectilePool(scene);
@@ -81,13 +82,17 @@ const fx = {
   uteroSpots: UTERO_SPOTS,
   foes: () => enemies,
   spawn: spawnEnemy,
-  sfx,
+  sfx, blood,
   banner, toast,
   hitstop(dur) { hitstopT = Math.max(hitstopT, dur); },
   shake(amp, dur = 0.1) { rig.shake(amp, dur); }
 };
 fx.onWaveClear = () => { draftPending = 1.4; }; // SILÊNCIO + loot antes da escolha
 const director = new Director(fx);
+// mercado já viu coisa: manchas antigas pelo piso
+for (let i = 0; i < 9; i++) {
+  blood.splatter((Math.random() - 0.5) * 20, (Math.random() - 0.5) * 20, 0.5 + Math.random());
+}
 
 // loja (DOM mínimo, jogo pausa aberto)
 let shopOpen = false;
@@ -461,7 +466,7 @@ function loop() {
       showDeath({ wave: director.wave, time: runT, kills, seed: SEED });
     }
     if (!dead) {
-      if (player.hp < prevHp) { damageFlash(); sfx('hurt'); }
+      if (player.hp < prevHp) { damageFlash(); sfx('hurt'); blood.splatter(player.pos.x, player.pos.z, 0.7); }
       prevHp = player.hp;
       setLowHp(player.hp === 1);
       const nearShop = Math.hypot(player.pos.x - shop.pos.x, player.pos.z - shop.pos.z) < 2.6;

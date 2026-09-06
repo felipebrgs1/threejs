@@ -29,20 +29,24 @@ export class Cacador {
 
     const armor = new THREE.MeshStandardMaterial({ color: 0x33302a, roughness: 0.55, metalness: 0.4 });
     this.armorMat = armor;
-    // diedro: pirâmide triangular — silhueta de seta em iso
-    this.body = new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.1, 3), armor);
-    this.body.position.y = 0.85; this.body.castShadow = true;
+    // corredor curvado: tronco inclinado + cabeça à frente
+    this.body = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.65, 0.35), armor);
+    this.body.position.y = 0.8; this.body.rotation.x = 0.3; this.body.castShadow = true;
     this.group.add(this.body);
+    this.chead = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 10),
+      new THREE.MeshStandardMaterial({ color: 0x9aa07a, roughness: 0.9 }));
+    this.chead.position.set(0, 1.2, 0.28); this.chead.castShadow = true;
+    this.group.add(this.chead);
     // ponta destacável (o módulo que mira)
     this.tip = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.5, 8),
       new THREE.MeshStandardMaterial({ color: 0x8a2a22, emissive: RED, emissiveIntensity: 0.8, roughness: 0.5 }));
-    this.tip.rotation.x = Math.PI / 2;
-    this.tip.position.set(0, 0.8, 0.62);
+    this.tip.rotation.x = -0.3; // crista na cabeça
+    this.tip.position.set(0, 1.38, 0.3);
     this.group.add(this.tip);
     // olho: fenda vermelha
     const eye = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.07, 0.05),
       new THREE.MeshStandardMaterial({ color: RED, emissive: RED, emissiveIntensity: 2 }));
-    eye.position.set(0, 1.0, 0.42); eye.rotation.y = 0;
+    eye.position.set(0, 1.2, 0.47); eye.rotation.y = 0;
     this.group.add(eye);
     // patas laterais destacáveis
     const legGeo = new THREE.BoxGeometry(0.16, 0.5, 0.5);
@@ -111,6 +115,7 @@ export class Cacador {
       if (this.legL) fx.shards.spawn(this.legL, c.clone().setY(0.45), new THREE.Vector3(0, 0, 1));
       if (this.legR) fx.shards.spawn(this.legR, c.clone().setY(0.45), new THREE.Vector3(0, 0, -1));
       if (fx.pickups) fx.pickups.dropSucata(this.pos);
+      fx.blood?.splatter(this.pos.x, this.pos.z, 1.0);
       this.scene.remove(this.group);
       sfx('crunch');
       fx.hitstop(0.1); fx.shake(0.2);
@@ -165,7 +170,10 @@ export class Cacador {
         fx.telegraph?.line(this.pos, a, 6.5, 0.7, 0.45);
         sfx('inflate');
       }
-      this.body.position.y = 0.85 + Math.abs(Math.sin(this.phase)) * 0.06;
+      this.body.position.y = 0.8 + Math.abs(Math.sin(this.phase)) * 0.08;
+      this.chead.position.y = 1.2 + Math.abs(Math.sin(this.phase)) * 0.06;
+      this.legL.rotation.x = Math.sin(this.phase * 2) * 0.8; // pernas bombeando
+      this.legR.rotation.x = -Math.sin(this.phase * 2) * 0.8;
     } else if (this.state === 'tele') {
       turn(1.5); // acompanha devagar — dá pra sair da faixa andando
       this.t -= dt;

@@ -18,11 +18,19 @@ export class Utero {
     this.pulse = 0;
 
     this.base = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.9, 1.1, 1.0, 12),
-      new THREE.MeshStandardMaterial({ color: 0x2e1a22, roughness: 0.8 })
+      new THREE.SphereGeometry(1.0, 14, 10),
+      new THREE.MeshStandardMaterial({ color: 0x4a2226, roughness: 0.9 })
     );
+    this.base.scale.y = 0.6;
     this.base.position.y = 0.5; this.base.castShadow = this.base.receiveShadow = true;
     this.group.add(this.base);
+    // embalagens grudadas no ninho
+    [[0.8, 0.3, 0xc0392b], [-0.7, 0.5, 0x2980b9], [0.1, -0.85, 0xf39c12]].forEach(([x, z, c]) => {
+      const b = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.28, 0.3),
+        new THREE.MeshStandardMaterial({ color: c, roughness: 0.8 }));
+      b.position.set(x, 0.25, z); b.rotation.y = Math.random() * 3;
+      this.group.add(b);
+    });
 
     this.sac = new THREE.Mesh(
       new THREE.SphereGeometry(0.7, 16, 12),
@@ -32,11 +40,16 @@ export class Utero {
     this.group.add(this.sac);
 
     this.lid = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.95, 0.95, 0.2, 12),
-      new THREE.MeshStandardMaterial({ color: 0x4a2b26, roughness: 0.55, metalness: 0.35, emissive: RED, emissiveIntensity: 0.12 })
+      new THREE.BoxGeometry(1.7, 0.25, 1.2),
+      new THREE.MeshStandardMaterial({ color: 0xd8dde2, roughness: 0.4, metalness: 0.2, emissive: RED, emissiveIntensity: 0.08 })
     );
-    this.lid.position.y = 1.5; this.lid.castShadow = true;
+    this.lid.position.y = 1.35; this.lid.castShadow = true;
     this.group.add(this.lid);
+    // puxador do freezer (filho — voa junto)
+    const pull = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.07, 0.07),
+      new THREE.MeshStandardMaterial({ color: 0x3a4048, roughness: 0.5, metalness: 0.5 }));
+    pull.position.set(0, 0.16, 0.4);
+    this.lid.add(pull);
 
     this.core = new THREE.Mesh(
       new THREE.OctahedronGeometry(0.3),
@@ -98,6 +111,7 @@ export class Utero {
       fx.shards.spawn(this.core, c.clone().setY(1), new THREE.Vector3(0, 0, -1));
       if (fx.pickups) { fx.pickups.dropNucleo(this.pos); fx.pickups.dropSucata(this.pos); }
       sfx('boom');
+      fx.blood?.splatter(this.pos.x, this.pos.z, 1.8);
       this.scene.remove(this.group);
       fx.hitstop(0.12); fx.shake(0.22);
     } else {

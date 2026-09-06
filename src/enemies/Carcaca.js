@@ -37,6 +37,22 @@ export class Carcaca {
     this.coreMesh = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.3, 1.1), armor);
     this.coreMesh.position.y = 1.0; this.coreMesh.castShadow = true;
     this.group.add(this.coreMesh);
+    // avental sujo + cabeça + pernas grossas de açougueiro
+    const apron = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.0, 0.06),
+      new THREE.MeshStandardMaterial({ color: 0xcfc8bd, roughness: 0.9 }));
+    apron.position.set(0, -0.05, 0.58);
+    this.coreMesh.add(apron);
+    const bhead = new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 10),
+      new THREE.MeshStandardMaterial({ color: 0x9aa07a, roughness: 0.9 }));
+    bhead.position.y = 1.95; bhead.castShadow = true;
+    this.group.add(bhead);
+    const blegMat = new THREE.MeshStandardMaterial({ color: 0x2e2a24, roughness: 0.9 });
+    this.blegL = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.6, 0.28), blegMat);
+    this.blegL.position.set(-0.35, 0.3, 0);
+    this.group.add(this.blegL);
+    this.blegR = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.6, 0.28), blegMat);
+    this.blegR.position.set(0.35, 0.3, 0);
+    this.group.add(this.blegR);
     // núcleo exposto atrás (ponto fraco, como a sentinela)
     this.core = new THREE.Mesh(new THREE.OctahedronGeometry(0.26),
       new THREE.MeshStandardMaterial({ color: RED, emissive: RED, emissiveIntensity: 2 }));
@@ -142,6 +158,7 @@ export class Carcaca {
       fx.pickups.dropNucleo(this.pos); fx.pickups.dropNucleo(this.pos);
       fx.pickups.dropSucata(this.pos); fx.pickups.dropSucata(this.pos); fx.pickups.dropSucata(this.pos);
     }
+    fx.blood?.splatter(this.pos.x, this.pos.z, 2.2);
     this.scene.remove(this.group);
     sfx('bigboom');
     fx.banner('CARCAÇA DESMONTADA', '2 ◆ na sucata');
@@ -237,5 +254,7 @@ export class Carcaca {
       }
     }
     this.coreMesh.position.y = 1.0 + Math.sin(this.phase) * 0.04;
+    this.blegL.rotation.x = Math.sin(this.phase) * 0.4;
+    this.blegR.rotation.x = -Math.sin(this.phase) * 0.4;
   }
 }

@@ -32,11 +32,11 @@ export class Director {
     this.maxConc = Math.min(7, 2 + Math.floor(n / 2));
     this.spawnT = 0.5;
     this.fx.mods.enemyFireMul = Math.max(0.7, 1 - (n - 1) * 0.04);
-    const parts = [`${S} sentinela${S > 1 ? 's' : ''}`];
-    if (O) parts.push(`${O} orbe${O > 1 ? 's' : ''}`);
-    if (H) parts.push(`${H} caçador${H > 1 ? 'es' : ''}`);
-    if (wantU - liveU > 0) parts.push('útero');
-    if (n % 5 === 0) parts.push('carcaça');
+    const parts = [`${S} brutamonte${S > 1 ? 's' : ''}`];
+    if (O) parts.push(`${O} baiacu${O > 1 ? 's' : ''}`);
+    if (H) parts.push(`${H} corredor${H > 1 ? 'es' : ''}`);
+    if (wantU - liveU > 0) parts.push('ninho');
+    if (n % 5 === 0) parts.push('açougueiro');
     this.fx.banner(`ONDA ${n}`, parts.join(' · '));
     this.fx.sfx('horn');
   }

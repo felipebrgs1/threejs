@@ -26,20 +26,32 @@ export class Player {
     this.aimAngle = 0;
     this.markT = 0; // hitmarker na mira
 
-    // corpo: cápsula
-    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x2b3d4f, roughness: 0.55, metalness: 0.35 });
+    // humano: moletom + cabeça + pernas que andam
+    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x27606e, roughness: 0.8, metalness: 0.05 });
     this.bodyMat = bodyMat;
-    this.body = new THREE.Mesh(new THREE.CapsuleGeometry(0.34, 0.55, 6, 12), bodyMat);
+    this.body = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.65, 0.4), bodyMat);
     this.body.position.y = 0.85; this.body.castShadow = true;
     this.group.add(this.body);
+    const skin = new THREE.MeshStandardMaterial({ color: 0xd9a066, roughness: 0.7 });
+    this.head = new THREE.Mesh(new THREE.SphereGeometry(0.21, 14, 12), skin);
+    this.head.position.y = 1.32; this.head.castShadow = true;
+    this.group.add(this.head);
+    const hair = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 10),
+      new THREE.MeshStandardMaterial({ color: 0x2a2018, roughness: 0.9 }));
+    hair.scale.set(1, 0.65, 1); hair.position.y = 1.4;
+    this.group.add(hair);
+    const legGeo = new THREE.BoxGeometry(0.16, 0.5, 0.16);
+    legGeo.translate(0, -0.25, 0); // pivô no quadril
+    const pants = new THREE.MeshStandardMaterial({ color: 0x1c222c, roughness: 0.85 });
+    this.legL = new THREE.Mesh(legGeo, pants);
+    this.legL.position.set(-0.14, 0.52, 0); this.legL.castShadow = true;
+    this.group.add(this.legL);
+    this.legR = new THREE.Mesh(legGeo, pants);
+    this.legR.position.set(0.14, 0.52, 0); this.legR.castShadow = true;
+    this.group.add(this.legR);
+    this.walkPhase = 0;
 
-    // núcleo do peito (pisca no i-frame)
-    this.core = new THREE.Mesh(
-      new THREE.OctahedronGeometry(0.16),
-      new THREE.MeshStandardMaterial({ color: CYAN, emissive: CYAN, emissiveIntensity: 1.6 })
-    );
-    this.core.position.set(0, 1.05, 0);
-    this.group.add(this.core);
+    // (cabeça no lugar do núcleo — i-frame pisca o corpo todo)
 
     // placa dorsal = vida (3 segmentos que racham/apagam)
     this.plates = [];
@@ -48,7 +60,7 @@ export class Player {
       const m = new THREE.Mesh(plateGeo, new THREE.MeshStandardMaterial({
         color: CYAN, emissive: CYAN, emissiveIntensity: 0.9, roughness: 0.4
       }));
-      m.position.set(-0.28 + i * 0.28, 1.15, 0.38);
+      m.position.set(-0.28 + i * 0.28, 1.1, 0.26);
       m.rotation.x = -0.12;
       this.group.add(m); this.plates.push(m);
     }
@@ -68,7 +80,7 @@ export class Player {
       const m = new THREE.Mesh(orbGeo, new THREE.MeshStandardMaterial({
         color: GOLD, emissive: GOLD, emissiveIntensity: 1.4
       }));
-      m.position.set(0.42, 1.35 - i * 0.2, 0.1);
+      m.position.set(0.34, 1.3 - i * 0.2, 0.1);
       this.group.add(m); this.orbs.push(m);
     }
     // gemas de NÚCLEO no ombro oposto: moeda da run, visível no corpo
@@ -78,11 +90,21 @@ export class Player {
       const m = new THREE.Mesh(gemGeo, new THREE.MeshStandardMaterial({
         color: GOLD, emissive: GOLD, emissiveIntensity: 1.8
       }));
-      m.position.set(-0.42, 1.35 - i * 0.24, 0.1);
+      m.position.set(-0.34, 1.3 - i * 0.24, 0.1);
       m.visible = false;
       this.group.add(m); this.gems.push(m);
     }
 
+    // braço direito segura a arma e mira; esquerdo fica junto ao corpo
+    const sleeve = new THREE.MeshStandardMaterial({ color: 0x1d4a56, roughness: 0.8 });
+    this.armR = new THREE.Group();
+    this.armR.position.set(0.3, 1.0, 0.1);
+    const armMesh = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.15, 0.15), sleeve);
+    armMesh.position.x = 0.25; armMesh.castShadow = true;
+    this.armR.add(armMesh);
+    const armL = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.5, 0.15), sleeve);
+    armL.position.set(-0.36, 0.85, 0.05); armL.castShadow = true;
+    this.group.add(armL);
     // arma: caixa pesada que chuta pra trás
     this.gun = new THREE.Group();
     this.gunMesh = new THREE.Mesh(
@@ -97,8 +119,9 @@ export class Player {
     tip.position.x = 0.38;
     this.tipMat = tip.material;
     this.gun.add(this.gunMesh, tip);
-    this.gun.position.set(0.3, 0.95, 0.25);
-    this.group.add(this.gun);
+    this.gun.position.set(0.35, 0.02, 0.1);
+    this.armR.add(this.gun);
+    this.group.add(this.armR);
 
     // mira no chão: anel achatado + haste curta
     this.aimRing = new THREE.Mesh(
@@ -141,7 +164,7 @@ export class Player {
       const m = new THREE.Mesh(orbGeo, new THREE.MeshStandardMaterial({
         color: GOLD, emissive: GOLD, emissiveIntensity: 1.4
       }));
-      m.position.set(0.42, 1.35 - i * 0.2, 0.1);
+      m.position.set(0.34, 1.3 - i * 0.2, 0.1);
       this.group.add(m); this.orbs.push(m);
     }
   }
@@ -160,7 +183,7 @@ export class Player {
     this.setMagSize(w.mag);
     const dims = { dardo: [1, 1, 1], sucata: [0.75, 1.5, 1.5], estilete: [1.4, 0.6, 0.6], canhao: [1.1, 1.6, 1.6] }[id];
     this.gunMesh.scale.set(dims[0], dims[1], dims[2]);
-    this.gun.children[1].position.x = 0.38 * dims[0];
+    this.gun.children[1].position.x = 0.42 * dims[0];
   }
   setMaxHp(n) { // Remendo: reconstrói a fileira de placas e cura 1
     this.maxHp = n;
@@ -172,7 +195,7 @@ export class Player {
       const m = new THREE.Mesh(plateGeo, new THREE.MeshStandardMaterial({
         color: 0x59d6ff, emissive: 0x59d6ff, emissiveIntensity: 0.9, roughness: 0.4
       }));
-      m.position.set((i - (n - 1) / 2) * 0.28, 1.15, 0.38);
+      m.position.set((i - (n - 1) / 2) * 0.28, 1.1, 0.26);
       m.rotation.x = -0.12;
       this.group.add(m); this.plates.push(m);
     }
@@ -200,8 +223,8 @@ export class Player {
     // aim
     const dx = aimPoint.x - this.pos.x, dz = aimPoint.z - this.pos.z;
     this.aimAngle = Math.atan2(dz, dx);
-    // só a arma gira com a mira — o corpo fica fixo p/ câmera ler placa/orbes
-    this.gun.rotation.y = -this.aimAngle;
+    // só o braço armado gira com a mira — o corpo fica fixo p/ câmera ler colete/orbes
+    this.armR.rotation.y = -this.aimAngle;
 
     // movimento com inércia leve (input já vem em espaço do mundo)
     const slow = this.reloading > 0 ? 0.7 : 1;
@@ -232,16 +255,20 @@ export class Player {
 
     // --- visuais no corpo ---
     this.recoil = Math.max(0, this.recoil - dt * 6);
-    this.gun.position.x = 0.3 - this.recoil * 0.22;
+    this.gun.position.x = 0.35 - this.recoil * 0.22;
     this.body.position.x = -this.recoil * 0.06;
     // inclina o corpo na direção do movimento — leitura de velocidade em iso
     this.body.rotation.z = THREE.MathUtils.clamp(-this.vel.x * 0.03, -0.18, 0.18) - this.recoil * 0.06;
     this.body.rotation.x = THREE.MathUtils.clamp(this.vel.z * 0.03, -0.18, 0.18);
+    // pernas alternam com a velocidade
+    this.walkPhase += dt * this.vel.length() * 2.6;
+    const swing = Math.min(1, this.vel.length() / 3) * 0.55;
+    this.legL.rotation.x = Math.sin(this.walkPhase) * swing;
+    this.legR.rotation.x = -Math.sin(this.walkPhase) * swing;
 
-    // i-frame: pisca núcleo
-    this.core.material.emissiveIntensity = this.iframes > 0
-      ? (Math.sin(performance.now() * 0.05) > 0 ? 2.5 : 0.2) : 1.6;
-    this.bodyMat.color.setHex(this.iframes > 0 ? 0x5a6b7d : 0x2b3d4f);
+    // i-frame: corpo todo pisca (flicker clássico de humano)
+    this.group.visible = this.iframes > 0 ? (Math.sin(performance.now() * 0.06) > -0.2) : true;
+    this.bodyMat.color.setHex(this.iframes > 0 ? 0x5a6b7d : 0x27606e);
 
     // placas de vida: apagadas conforme perde
     this.plates.forEach((p, i) => {

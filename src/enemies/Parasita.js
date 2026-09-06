@@ -21,11 +21,21 @@ export class Parasita {
     this.phase = Math.random() * 10;
 
     this.mesh = new THREE.Mesh(
-      new THREE.OctahedronGeometry(0.22),
-      new THREE.MeshStandardMaterial({ color: 0x3a1c08, emissive: ORANGE, emissiveIntensity: 1.4, roughness: 0.45 })
+      new THREE.BoxGeometry(0.34, 0.24, 0.46),
+      new THREE.MeshStandardMaterial({ color: 0x8a7a5a, emissive: ORANGE, emissiveIntensity: 0.7, roughness: 0.8 })
     );
     this.mesh.position.y = 0.7; this.mesh.castShadow = true;
     this.group.add(this.mesh);
+    // cabeça + bracinhos que se arrastam (filhos — clonam junto no shard)
+    const zskin = new THREE.MeshStandardMaterial({ color: 0x9aa07a, roughness: 0.9 });
+    const phead = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 8), zskin);
+    phead.position.set(0, 0.08, 0.28);
+    this.mesh.add(phead);
+    [-0.2, 0.2].forEach(x => {
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.3), zskin);
+      arm.position.set(x, -0.05, 0.15);
+      this.mesh.add(arm);
+    });
     this.blob = new THREE.Mesh(
       new THREE.CircleGeometry(0.28, 14),
       new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35, depthWrite: false })
@@ -56,6 +66,7 @@ export class Parasita {
     sfx('hit');
     fx.shards.spawn(this.mesh, new THREE.Vector3(this.pos.x, 0.7, this.pos.z),
       new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5));
+    fx.blood?.splatter(this.pos.x, this.pos.z, 0.6);
     this.scene.remove(this.group);
   }
 

@@ -21,11 +21,21 @@ export class Orbe {
     this.phase = Math.random() * 10;
 
     this.core = new THREE.Mesh(
-      new THREE.SphereGeometry(0.32, 18, 14),
-      new THREE.MeshStandardMaterial({ color: 0x3a1512, emissive: RED, emissiveIntensity: 1.6, roughness: 0.4 })
+      new THREE.SphereGeometry(0.42, 18, 14),
+      new THREE.MeshStandardMaterial({ color: 0x6b4a3a, emissive: RED, emissiveIntensity: 1.2, roughness: 0.6 })
     );
     this.core.position.y = 1.0; this.core.castShadow = true;
     this.group.add(this.core);
+    // cabecinha + bracinhos atrofiados no barrigão
+    const zskin = new THREE.MeshStandardMaterial({ color: 0x9aa07a, roughness: 0.9 });
+    const zhead = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), zskin);
+    zhead.position.y = 1.5;
+    this.group.add(zhead);
+    [-0.45, 0.45].forEach(x => {
+      const arm = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), zskin);
+      arm.position.set(x, 1.0, 0.1);
+      this.group.add(arm);
+    });
 
     this.ringMesh = new THREE.Mesh(
       new THREE.TorusGeometry(0.58, 0.09, 10, 28),
@@ -81,12 +91,13 @@ export class Orbe {
       const a = (i / 6) * Math.PI * 2 + Math.random() * 0.4;
       const m = new THREE.Mesh(
         new THREE.OctahedronGeometry(0.2),
-        new THREE.MeshStandardMaterial({ color: 0x3a1512, emissive: RED, emissiveIntensity: 1.2, roughness: 0.5 })
+        new THREE.MeshStandardMaterial({ color: 0x7a1a1a, emissive: RED, emissiveIntensity: 1.2, roughness: 0.5 })
       );
       fx.shards.spawn(m, new THREE.Vector3(this.pos.x, 1.0, this.pos.z),
         new THREE.Vector3(Math.cos(a), 0, Math.sin(a)), { hot: true, hotT: 1.2 });
     }
     this.telegraph.ring(new THREE.Vector3(this.pos.x, 0, this.pos.z), this.blastR, 0.3);
+    fx.blood?.splatter(this.pos.x, this.pos.z, 1.6);
     // dano no player (respeita i-frame/dash) + knockback
     const dx = player.pos.x - this.pos.x, dz = player.pos.z - this.pos.z;
     const d = Math.hypot(dx, dz);

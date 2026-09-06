@@ -20,13 +20,26 @@ export class Sentinel {
     this.speed = 1.7;
     this.fireCd = 2.0;
 
-    const armor = new THREE.MeshStandardMaterial({ color: 0x4a2b26, roughness: 0.6, metalness: 0.3 });
+    const armor = new THREE.MeshStandardMaterial({ color: 0x5a6b4a, roughness: 0.85, metalness: 0.05 }); // pele doente
     this.armorMat = armor;
 
     // corpo
     this.bodyMesh = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.1, 0.9), armor);
     this.bodyMesh.position.y = 0.85; this.bodyMesh.castShadow = true;
     this.group.add(this.bodyMesh);
+    // cabeça + pernas que arrastam
+    const zskin = new THREE.MeshStandardMaterial({ color: 0x9aa07a, roughness: 0.9 });
+    this.zhead = new THREE.Mesh(new THREE.SphereGeometry(0.26, 12, 10), zskin);
+    this.zhead.position.y = 1.65; this.zhead.castShadow = true;
+    this.group.add(this.zhead);
+    const zpants = new THREE.MeshStandardMaterial({ color: 0x2e2a24, roughness: 0.9 });
+    this.zlegL = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.55, 0.22), zpants);
+    this.zlegL.position.set(-0.22, 0.28, 0);
+    this.group.add(this.zlegL);
+    this.zlegR = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.55, 0.22), zpants);
+    this.zlegR.position.set(0.22, 0.28, 0);
+    this.group.add(this.zlegR);
+    this.zphase = Math.random() * 10;
     // núcleo (ponto fraco traseiro)
     this.core = new THREE.Mesh(new THREE.OctahedronGeometry(0.22),
       new THREE.MeshStandardMaterial({ color: RED, emissive: RED, emissiveIntensity: 1.8 }));
@@ -34,14 +47,19 @@ export class Sentinel {
     this.group.add(this.core);
     // canhão lateral
     this.cannon = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.18, 0.8, 10),
-      new THREE.MeshStandardMaterial({ color: 0x1a1210, roughness: 0.4, metalness: 0.6 }));
+      new THREE.MeshStandardMaterial({ color: 0x4a3a2a, roughness: 0.6, metalness: 0.4 }));
     this.cannon.rotation.z = Math.PI / 2; this.cannon.position.set(0.35, 0.9, 0.3);
     this.group.add(this.cannon);
     // PLACA frontal destacável (o módulo)
     this.plate = new THREE.Mesh(new THREE.BoxGeometry(1.15, 1.4, 0.16),
-      new THREE.MeshStandardMaterial({ color: 0x8a2a22, roughness: 0.5, metalness: 0.4, emissive: RED, emissiveIntensity: 0.15 }));
+      new THREE.MeshStandardMaterial({ color: 0xd8dde2, roughness: 0.35, metalness: 0.2, emissive: RED, emissiveIntensity: 0.05 }));
     this.plate.position.set(0, 0.95, 0.55); this.plate.castShadow = true;
     this.group.add(this.plate);
+    // alça da porta de geladeira (filha — voa junto no detach)
+    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.7, 0.1),
+      new THREE.MeshStandardMaterial({ color: 0x3a4048, roughness: 0.5, metalness: 0.5 }));
+    handle.position.set(0.38, 0, 0.12);
+    this.plate.add(handle);
     // sombra blob
     this.blob = new THREE.Mesh(new THREE.CircleGeometry(0.7, 18),
       new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: 0.35, depthWrite: false }));
@@ -103,6 +121,7 @@ export class Sentinel {
       else { fx.pickups.dropSucata(this.pos); fx.pickups.dropSucata(this.pos); }
     }
     sfx('crunch');
+    fx.blood?.splatter(this.pos.x, this.pos.z, 1.2);
     this.scene.remove(this.group);
     fx.hitstop(0.12); fx.shake(0.2);
   }
@@ -164,7 +183,12 @@ export class Sentinel {
       this.lobCd = 8; fx.still.t = 0;
     }
     if (fx.room) collideWorld(fx.room, this.pos, 0.55);
-    // bob idle para ler volume em iso
-    this.bodyMesh.position.y = 0.85 + Math.sin(performance.now() * 0.003) * 0.04;
+    // bob + arrastar de pernas para ler volume em iso
+    this.zphase += dt * 3;
+    this.bodyMesh.position.y = 0.85 + Math.sin(this.zphase) * 0.04;
+    this.zhead.position.y = 1.65 + Math.sin(this.zphase + 1) * 0.05;
+    this.zhead.rotation.z = Math.sin(this.zphase * 0.6) * 0.15; // cabeça pendida
+    this.zlegL.rotation.x = Math.sin(this.zphase) * 0.45;
+    this.zlegR.rotation.x = -Math.sin(this.zphase) * 0.45;
   }
 }
