@@ -35,7 +35,7 @@ export class Shop {
 
     this.stock = [
       { id: 'mag', name: 'Pente Estendido', desc: 'pente 3 → 5. Orbes extras no ombro.', cost: 1, sold: false },
-      { id: 'dash', name: 'Fôlego', desc: 'dash recarrega em 1.05s em vez de 1.6s.', cost: 1, sold: false },
+      { id: 'dash', name: 'Fôlego', desc: 'dash recarrega em 1.4s em vez de 2.0s.', cost: 1, sold: false },
       { id: 'olho', name: 'Olho Claro', desc: 'telegraphs inimigos 35% mais longos. Caro porque tempo é vida.', cost: 2, sold: false },
     ];
   }
@@ -46,7 +46,7 @@ export class Shop {
     player.nucleos -= it.cost;
     it.sold = true;
     if (it.id === 'mag') player.setMagSize(5);
-    if (it.id === 'dash') player.dashCdBase = 1.05;
+    if (it.id === 'dash') player.dashCdBase = 1.4;
     if (it.id === 'olho') fx.mods.telegraphMul = 1.35;
     fx.shake(0.08, 0.1);
     return true;

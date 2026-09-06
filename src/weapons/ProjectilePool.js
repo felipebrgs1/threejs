@@ -31,13 +31,13 @@ export class ProjectilePool {
       );
       trail.visible = false;
       scene.add(mesh, shadow, trail);
-      this.items.push({ mesh, shadow, trail, active: false, foe: isFoe, vel: new THREE.Vector3(), life: 0, r: isFoe ? 0.3 : 0.35, dmg: 1 });
+      this.items.push({ mesh, shadow, trail, active: false, foe: isFoe, vel: new THREE.Vector3(), life: 0, r: isFoe ? 0.3 : 0.35, dmg: 1, hitSet: new Set() });
     }
   }
   fire(pos, dir, speed, foe = false, y = 1.0) {
     const s = this.items.find(i => !i.active && i.foe === foe);
     if (!s) return null;
-    s.active = true; s.life = 2.2; s.dmg = 1;
+    s.active = true; s.life = 2.2; s.dmg = 1; s.hitSet.clear();
     s.mesh.scale.setScalar(1);
     s.mesh.visible = s.shadow.visible = s.trail.visible = true;
     s.mesh.position.set(pos.x, y, pos.z);

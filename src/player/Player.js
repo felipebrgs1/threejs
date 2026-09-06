@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { WORLD } from '../world/world.js';
+import { WEAPONS } from '../weapons/Weapon.js';
 
 // Corpo compacto legível em iso. Vida/dash/munição = meshes no corpo, zero HUD.
 const CYAN = 0x59d6ff, DIM = 0x1a2733, RED = 0xff3b30, GOLD = 0xffc857;
@@ -12,9 +13,12 @@ export class Player {
     this.hp = 3; this.maxHp = 3;
     this.iframes = 0;
     this.mag = 3; this.magSize = 3;
-    this.overcharge = false; // ★ do NÚCLEO: próximo tiro com dano 2
+    this.weaponId = 'dardo'; this.reloadTime = 1.6;
+    this.overcharge = false; this.overchargeMax = 1; this.overchargeShots = 1;
     this.nucleos = 0; // moeda da run (Q = recarga pesada, loja = compra)
-    this.speedMul = 1; this.dashPenalty = 0; this.dashCdBase = 1.6;
+    this.speedMul = 1; this.dashPenalty = 0; this.dashCdBase = 2.0;
+    this.magnet = false; this.chargeGlow = 0;
+    this.maxHp = 3;
     this.reloading = 0; this.reloadTime = 1.6;
     this.fireCd = 0;
     this.dashT = 0; this.dashCd = 0; this.dashDir = new THREE.Vector3(1, 0, 0);
@@ -81,18 +85,18 @@ export class Player {
 
     // arma: caixa pesada que chuta pra trás
     this.gun = new THREE.Group();
-    const gunMesh = new THREE.Mesh(
+    this.gunMesh = new THREE.Mesh(
       new THREE.BoxGeometry(0.7, 0.18, 0.2),
       new THREE.MeshStandardMaterial({ color: 0x11181f, roughness: 0.4, metalness: 0.7 })
     );
-    gunMesh.castShadow = true;
+    this.gunMesh.castShadow = true;
     const tip = new THREE.Mesh(
       new THREE.BoxGeometry(0.12, 0.22, 0.24),
       new THREE.MeshStandardMaterial({ color: GOLD, emissive: GOLD, emissiveIntensity: 0.8 })
     );
     tip.position.x = 0.38;
     this.tipMat = tip.material;
-    this.gun.add(gunMesh, tip);
+    this.gun.add(this.gunMesh, tip);
     this.gun.position.set(0.3, 0.95, 0.25);
     this.group.add(this.gun);
 
@@ -120,8 +124,8 @@ export class Player {
     if (this.reloading <= 0 && this.mag < this.magSize) this.reloading = this.reloadTime;
   }
   canFire() { return this.fireCd <= 0 && this.reloading <= 0 && this.mag > 0 && this.dashT <= 0; }
-  onFired(kick) {
-    this.mag--; this.fireCd = 0.42; this.recoil = 1;
+  onFired(kick, cd = 0.42) {
+    this.mag--; this.fireCd = cd; this.recoil = 1;
     // recuo empurra o corpo (massa)
     this.vel.addScaledVector(new THREE.Vector3(Math.cos(this.aimAngle), 0, Math.sin(this.aimAngle)), -kick);
   }
@@ -144,16 +148,46 @@ export class Player {
   consumeNucleo() { // Q: recarga pesada + overcharge, direto do bolso
     if (this.nucleos <= 0 || this.overcharge) return false;
     this.nucleos--;
-    this.mag = this.magSize; this.reloading = 0; this.overcharge = true;
+    this.mag = this.magSize; this.reloading = 0;
+    this.overcharge = true; this.overchargeShots = this.overchargeMax;
     return true;
+  }
+  setWeapon(id) { // draft/shop trocam a fantasia inteira: pente, recarga e silhueta
+    this.weaponId = id;
+    const w = WEAPONS[id];
+    this.reloadTime = w.reload;
+    this.reloading = 0;
+    this.setMagSize(w.mag);
+    const dims = { dardo: [1, 1, 1], sucata: [0.75, 1.5, 1.5], estilete: [1.4, 0.6, 0.6], canhao: [1.1, 1.6, 1.6] }[id];
+    this.gunMesh.scale.set(dims[0], dims[1], dims[2]);
+    this.gun.children[1].position.x = 0.38 * dims[0];
+  }
+  setMaxHp(n) { // Remendo: reconstrói a fileira de placas e cura 1
+    this.maxHp = n;
+    this.hp = Math.min(this.hp + 1, n);
+    for (const p of this.plates) this.group.remove(p);
+    this.plates = [];
+    const plateGeo = new THREE.BoxGeometry(0.22, 0.5, 0.08);
+    for (let i = 0; i < n; i++) {
+      const m = new THREE.Mesh(plateGeo, new THREE.MeshStandardMaterial({
+        color: 0x59d6ff, emissive: 0x59d6ff, emissiveIntensity: 0.9, roughness: 0.4
+      }));
+      m.position.set((i - (n - 1) / 2) * 0.28, 1.15, 0.38);
+      m.rotation.x = -0.12;
+      this.group.add(m); this.plates.push(m);
+    }
   }
   reset() {
     this.pos.set(0, 0, 0); this.vel.set(0, 0, 0);
-    this.hp = 3; this.iframes = 0;
-    this.setMagSize(3); this.reloading = 0;
+    this.speed = 4.4;
+    this.setMaxHp(3); this.hp = 3; this.iframes = 0;
+    this.setWeapon('dardo');
+    this.reloading = 0;
     this.fireCd = 0; this.dashT = 0; this.dashCd = 0; this.recoil = 0;
-    this.overcharge = false; this.nucleos = 0; this.markT = 0;
-    this.speedMul = 1; this.dashPenalty = 0; this.dashCdBase = 1.6;
+    this.overcharge = false; this.overchargeMax = 1; this.overchargeShots = 1;
+    this.nucleos = 0; this.markT = 0; this.chargeGlow = 0;
+    this.speedMul = 1; this.dashPenalty = 0; this.dashCdBase = 2.0;
+    this.magnet = false;
   }
 
   damage() {
@@ -177,8 +211,8 @@ export class Player {
         // fim do dash: devolve velocidade normal, sem resíduo dos 34 m/s
         this.vel.copy(this.dashDir).multiplyScalar(this.speed * slow);
       } else {
-        // 5.5m em 0.16s = 34.4 m/s durante o dash
-        this.vel.copy(this.dashDir).multiplyScalar(5.5 / 0.16);
+        // 4m em 0.16s = 25 m/s durante o dash (nerf: dash é recurso, não passe livre)
+        this.vel.copy(this.dashDir).multiplyScalar(4.0 / 0.16);
       }
     } else {
       this.vel.x = THREE.MathUtils.damp(this.vel.x, input.x * this.speed * slow * this.speedMul, 10, dt);
@@ -232,9 +266,11 @@ export class Player {
       } else o.scale.setScalar(1);
     });
     this.gems.forEach((g, i) => { g.visible = i < this.nucleos; g.rotation.y += dt * 3; });
-    // ponta da arma acende branca em overcharge
-    this.tipMat.emissiveIntensity = this.overcharge ? 2.2 + Math.sin(performance.now() * 0.015) : 0.8;
-    this.tipMat.color.setHex(this.overcharge ? 0xffffff : GOLD);
+    // ponta da arma: branca em overcharge, laranja carregando o canhão
+    this.tipMat.emissiveIntensity = this.overcharge
+      ? 2.2 + Math.sin(performance.now() * 0.015)
+      : 0.8 + this.chargeGlow * 3;
+    this.tipMat.color.setHex(this.overcharge ? 0xffffff : this.chargeGlow > 0.05 ? 0xffb36b : GOLD);
     // mira no chão — pisca branca no acerto (hitmarker, zero número)
     this.aimRing.position.set(aimPoint.x, 0.03, aimPoint.z);
     const pulse = 1 + Math.sin(performance.now() * 0.008) * 0.06;

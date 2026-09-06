@@ -60,6 +60,7 @@ export class Director {
     this.phase = 'intermission'; this.t = 7;
     this.fx.banner('SILÊNCIO', 'onda eliminada · respire');
     this.fx.sfx('clear');
+    this.fx.onWaveClear?.(); // main abre o draft roguelike
     for (let i = 0; i < 2; i++) this.fx.pickups.dropSucata(ctx.player.pos);
     if (this.wave % 3 === 0) {
       this.fx.pickups.dropNucleo(ctx.player.pos);

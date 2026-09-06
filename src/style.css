@@ -19,6 +19,21 @@ html, body { margin: 0; height: 100%; background: #060709; overflow: hidden; }
 #shop button { background: #2a2416; color: #ffc857; border: 1px solid #6b5a2a; border-radius: 5px; padding: 5px 8px; cursor: pointer; white-space: nowrap; }
 #shop button:hover { background: #3a3018; }
 #shop .sold { color: #5a6b7d; } #shop .poor { color: #7a5a3a; font-size: 11px; }
+/* --- Draft roguelike: mesma família da loja, dourado = escolha --- */
+#draft { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 340px;
+  background: rgba(8,12,16,.96); border: 1px solid #6b5a2a; border-radius: 10px;
+  color: #d8c98a; font: 13px/1.45 ui-monospace, Menlo, monospace; padding: 16px 18px; }
+#draft.hidden { display: none; }
+#draft h3 { margin: 0 0 2px; color: #ffc857; letter-spacing: .25em; font-size: 15px; }
+#draft .sub { opacity: .6; font-size: 11px; margin: 4px 0 8px; }
+#draft .item { display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  border-top: 1px solid #2a2416; padding: 9px 0; }
+#draft .item p { margin: 2px 0 0; opacity: .75; font-size: 11px; }
+#draft .item b { color: #e8eef4; }
+#draft button { background: #2a2416; color: #ffc857; border: 1px solid #6b5a2a; border-radius: 5px;
+  padding: 6px 10px; cursor: pointer; white-space: nowrap; font: 12px ui-monospace, monospace; }
+#draft button:hover { background: #3a3018; }
+#draft .tag { font-size: 10px; letter-spacing: .2em; opacity: .55; }
 /* --- HUD mínima: mundo primeiro, DOM só sussurra --- */
 #vignette-dmg { position: fixed; inset: 0; pointer-events: none; opacity: 0;
   background: radial-gradient(ellipse at center, transparent 45%, rgba(255,59,48,.55) 100%); }

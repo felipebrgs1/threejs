@@ -58,7 +58,15 @@ export class PickupField {
         it.halo.material.opacity = 0.5 + Math.sin(it.phase * 1.5) * 0.25;
       }
       const dx = it.mesh.position.x - player.pos.x, dz = it.mesh.position.z - player.pos.z;
-      if (dx * dx + dz * dz > 0.95 * 0.95) continue;
+      const d2 = dx * dx + dz * dz;
+      if (player.magnet && d2 < 9 && d2 > 0.8) { // ímã: voa até você
+        const d = Math.sqrt(d2);
+        it.mesh.position.x -= dx / d * 6 * dt;
+        it.mesh.position.z -= dz / d * 6 * dt;
+        if (it.halo) it.halo.position.set(it.mesh.position.x, 0.04, it.mesh.position.z);
+        continue;
+      }
+      if (d2 > 0.95 * 0.95) continue;
       if (it.kind === 'sucata') {
         if (player.mag >= player.magSize) continue; // pente cheio: deixa no chão
         player.mag++;
