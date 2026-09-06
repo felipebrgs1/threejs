@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 // Director de sobrevivência: ondas com composição crescente, spawn com telegraph
 // dourado (justo), respiro entre ondas com recompensa. Densidade sobe, lane justo fica.
-const SPOTS = [[-12, -12], [12, 11], [-12, 11], [12, -12], [0, -13], [0, 13], [-13, 0], [13, 0]];
+const SPOTS = [[-15, -15], [15, 14], [-15, 14], [15, -15], [0, -16], [0, 16], [-16, 0], [16, 0]];
 
 export class Director {
   constructor(fx) {
@@ -16,6 +16,7 @@ export class Director {
   }
   startWave(n, ctx) {
     this.wave = n; this.phase = 'combat';
+    this.fx.onWaveStart?.(n); // main troca de andar aqui
     const S = 1 + Math.floor(n / 2);
     const O = n >= 2 ? Math.floor(n / 2) : 0;
     const H = n >= 2 ? Math.min(2, Math.floor(n / 2)) : 0;
@@ -49,7 +50,7 @@ export class Director {
         e.kind === 'utero' && !e.dead && Math.hypot(e.pos.x - sx, e.pos.z - sz) < 3));
       [x, z] = free.length ? free[0] : spots[0];
     } else {
-      const far = SPOTS.filter(([sx, sz]) => Math.hypot(sx - ctx.player.pos.x, sz - ctx.player.pos.z) > 7);
+      const far = SPOTS.filter(([sx, sz]) => Math.hypot(sx - ctx.player.pos.x, sz - ctx.player.pos.z) > 9);
       [x, z] = far.length ? far[(Math.random() * far.length) | 0] : [0, -7];
     }
     // dourado = spawn (oportunidade), vermelho = perigo. Linguagem fixa.

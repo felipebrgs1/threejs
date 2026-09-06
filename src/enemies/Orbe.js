@@ -120,6 +120,11 @@ export class Orbe {
         cov.hit(new THREE.Vector3(1, 0, 0));
       }
     }
+    if (fx.room) for (const crate of fx.room.loot || []) { // explosão abre caixas
+      if (!crate.dead && Math.hypot(crate.group.position.x - this.pos.x, crate.group.position.z - this.pos.z) < this.blastR + 1) {
+        crate.hit(new THREE.Vector3(1, 0, 0));
+      }
+    }
     if (fx.pickups) { fx.pickups.dropSucata(this.pos); fx.pickups.dropSucata(this.pos); }
     sfx('boom');
     this.scene.remove(this.group);

@@ -64,6 +64,11 @@ export class GrenadePool {
         cov.hit(new THREE.Vector3(dx, 0, dz));
       }
     }
+    if (room) for (const crate of room.loot || []) {
+      if (!crate.dead && Math.hypot(crate.group.position.x - cx, crate.group.position.z - cz) < g.blastR + 1) {
+        crate.hit(new THREE.Vector3(dx, 0, dz));
+      }
+    }
     sfx('boom');
     fx.hitstop(0.09); fx.shake(0.24);
     g.active = false;

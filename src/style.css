@@ -35,6 +35,7 @@ html, body { margin: 0; height: 100%; background: #060709; overflow: hidden; }
 #draft button:hover { background: #3a3018; }
 #draft .tag { font-size: 10px; letter-spacing: .2em; opacity: .55; }
 /* --- HUD mínima: mundo primeiro, DOM só sussurra --- */
+#fade { position: fixed; inset: 0; background: #000; opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 50; }
 #vignette-dmg { position: fixed; inset: 0; pointer-events: none; opacity: 0;
   background: radial-gradient(ellipse at center, transparent 45%, rgba(255,59,48,.55) 100%); }
 #vignette-low { position: fixed; inset: 0; pointer-events: none; opacity: 0;

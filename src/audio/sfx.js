@@ -103,6 +103,10 @@ export function sfx(name) {
     case 'foeShoot': if (!throttle('foeShoot', 140)) return;
       tone({ f: 180, f2: 70, type: 'square', dur: 0.08, vol: 0.25 }); break;
     case 'ui': tone({ f: 700, type: 'sine', dur: 0.05, vol: 0.2 }); break;
+    case 'heal':
+      tone({ f: 523, type: 'triangle', dur: 0.12, vol: 0.3 });
+      tone({ f: 659, type: 'triangle', dur: 0.12, vol: 0.3, at: 0.09 });
+      tone({ f: 784, type: 'triangle', dur: 0.18, vol: 0.3, at: 0.18 }); break;
     case 'death':
       tone({ f: 220, f2: 30, type: 'sawtooth', dur: 1.0, vol: 0.7 });
       noise({ dur: 0.8, vol: 0.4, fc: 600, fc2: 60 }); break;

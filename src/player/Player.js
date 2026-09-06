@@ -53,17 +53,19 @@ export class Player {
 
     // (cabeça no lugar do núcleo — i-frame pisca o corpo todo)
 
-    // placa dorsal = vida (3 segmentos que racham/apagam)
-    this.plates = [];
-    const plateGeo = new THREE.BoxGeometry(0.22, 0.5, 0.08);
-    for (let i = 0; i < 3; i++) {
-      const m = new THREE.Mesh(plateGeo, new THREE.MeshStandardMaterial({
-        color: CYAN, emissive: CYAN, emissiveIntensity: 0.9, roughness: 0.4
-      }));
-      m.position.set(-0.28 + i * 0.28, 1.1, 0.26);
-      m.rotation.x = -0.12;
-      this.group.add(m); this.plates.push(m);
-    }
+    // vida holográfica: barra flutuante que encara a câmera (billboard no main)
+    this.holoCanvas = document.createElement('canvas');
+    this.holoCanvas.width = 128; this.holoCanvas.height = 32;
+    this.holoTex = new THREE.CanvasTexture(this.holoCanvas);
+    this.holoMat = new THREE.MeshBasicMaterial({
+      map: this.holoTex, transparent: true, opacity: 0.9,
+      blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide
+    });
+    this.holo = new THREE.Group();
+    this.holo.add(new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.25), this.holoMat));
+    this.holo.position.y = 1.95;
+    this.group.add(this.holo);
+    this._holoHp = -1; this._holoMax = -1;
 
     // anel do tornozelo = dash cooldown
     this.ring = new THREE.Mesh(
@@ -185,20 +187,36 @@ export class Player {
     this.gunMesh.scale.set(dims[0], dims[1], dims[2]);
     this.gun.children[1].position.x = 0.42 * dims[0];
   }
-  setMaxHp(n) { // Remendo: reconstrói a fileira de placas e cura 1
+  setMaxHp(n) { // Remendo: +1 teto, cura 1, holograma redesenha sozinho
     this.maxHp = n;
     this.hp = Math.min(this.hp + 1, n);
-    for (const p of this.plates) this.group.remove(p);
-    this.plates = [];
-    const plateGeo = new THREE.BoxGeometry(0.22, 0.5, 0.08);
+  }
+  drawHolo() { // segmentos com glow + scanlines; vermelho pulsante no último
+    const g = this.holoCanvas.getContext('2d');
+    const W = this.holoCanvas.width, H = this.holoCanvas.height;
+    g.clearRect(0, 0, W, H);
+    const danger = this.hp <= 1;
+    const col = danger ? '#ff5a4e' : '#6ff3ff';
+    const n = this.maxHp, gap = 6;
+    const segW = (W - gap * (n + 1)) / n;
     for (let i = 0; i < n; i++) {
-      const m = new THREE.Mesh(plateGeo, new THREE.MeshStandardMaterial({
-        color: 0x59d6ff, emissive: 0x59d6ff, emissiveIntensity: 0.9, roughness: 0.4
-      }));
-      m.position.set((i - (n - 1) / 2) * 0.28, 1.1, 0.26);
-      m.rotation.x = -0.12;
-      this.group.add(m); this.plates.push(m);
+      const x = gap + i * (segW + gap);
+      if (i < this.hp) {
+        g.shadowColor = col; g.shadowBlur = 10;
+        g.fillStyle = col;
+        g.fillRect(x, 8, segW, H - 16);
+        g.shadowBlur = 0;
+        g.fillStyle = 'rgba(255,255,255,.75)';
+        g.fillRect(x, 8, segW, 3);
+      } else {
+        g.strokeStyle = danger ? 'rgba(255,90,78,.5)' : 'rgba(110,240,255,.4)';
+        g.lineWidth = 2;
+        g.strokeRect(x + 1, 9, segW - 2, H - 18);
+      }
     }
+    g.fillStyle = 'rgba(0,0,0,.25)';
+    for (let y = 0; y < H; y += 4) g.fillRect(0, y, W, 1);
+    this.holoTex.needsUpdate = true;
   }
   reset() {
     this.pos.set(0, 0, 0); this.vel.set(0, 0, 0);
@@ -223,8 +241,12 @@ export class Player {
     // aim
     const dx = aimPoint.x - this.pos.x, dz = aimPoint.z - this.pos.z;
     this.aimAngle = Math.atan2(dz, dx);
-    // só o braço armado gira com a mira — o corpo fica fixo p/ câmera ler colete/orbes
-    this.armR.rotation.y = -this.aimAngle;
+    // corpo inteiro gira pra mira (humano), giro rápido com peso; braço acompanha
+    const wantYaw = -this.aimAngle;
+    const curYaw = this.group.rotation.y;
+    const dyaw = ((wantYaw - curYaw + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+    this.group.rotation.y = curYaw + THREE.MathUtils.clamp(dyaw, -12 * dt, 12 * dt);
+    this.armR.rotation.y = 0;
 
     // movimento com inércia leve (input já vem em espaço do mundo)
     const slow = this.reloading > 0 ? 0.7 : 1;
@@ -270,13 +292,15 @@ export class Player {
     this.group.visible = this.iframes > 0 ? (Math.sin(performance.now() * 0.06) > -0.2) : true;
     this.bodyMat.color.setHex(this.iframes > 0 ? 0x5a6b7d : 0x27606e);
 
-    // placas de vida: apagadas conforme perde
-    this.plates.forEach((p, i) => {
-      const alive = i < this.hp;
-      p.material.emissiveIntensity = alive ? 0.9 : 0.05;
-      p.material.color.setHex(alive ? CYAN : 0x222a32);
-      p.rotation.z = alive ? 0 : 0.5; // quebrada tomba
-    });
+    // holograma: redesenha ao mudar, flicker + flutuação de projeção
+    if (this.hp !== this._holoHp || this.maxHp !== this._holoMax) {
+      this._holoHp = this.hp; this._holoMax = this.maxHp;
+      this.drawHolo();
+    }
+    const danger = this.hp <= 1;
+    this.holo.position.y = 1.95 + Math.sin(performance.now() * 0.003) * 0.03;
+    this.holoMat.opacity = (danger ? 0.75 + Math.sin(performance.now() * 0.02) * 0.25 : 0.9)
+      + (Math.random() - 0.5) * 0.08;
     // anel dash: some durante cooldown
     const ready = this.dashCd <= 0;
     this.ring.material.opacity = ready ? 0.9 : 0.18;

@@ -30,15 +30,15 @@ renderer.shadowMap.type = THREE.PCFShadowMap;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x060709);
-scene.fog = new THREE.Fog(0x060709, 34, 78);
+scene.fog = new THREE.Fog(0x060709, 40, 95);
 
 // luz fria escassa: 1 dir com sombra + ambiente baixo + 2 points
 const dir = new THREE.DirectionalLight(0xbfd9ff, 1.5);
 dir.position.set(-6, 12, 4);
 dir.castShadow = true;
 dir.shadow.mapSize.set(1024, 1024);
-dir.shadow.camera.left = -17; dir.shadow.camera.right = 17;
-dir.shadow.camera.top = 17; dir.shadow.camera.bottom = -17;
+dir.shadow.camera.left = -21; dir.shadow.camera.right = 21;
+dir.shadow.camera.top = 21; dir.shadow.camera.bottom = -21;
 scene.add(dir);
 scene.add(new THREE.AmbientLight(0x2a3644, 0.7));
 const p1 = new THREE.PointLight(0x59d6ff, 8, 14); p1.position.set(-4, 3, 3); scene.add(p1);
@@ -46,7 +46,8 @@ const p2 = new THREE.PointLight(0xff3b30, 6, 12); p2.position.set(5, 2.5, -4); s
 
 const shards = new ShardField(scene);
 const telegraph = new TelegraphDecal(scene);
-const room = new Room(scene, shards);
+let room = new Room(scene, shards, 'loja');
+let currentTheme = 'loja';
 const pickups = new PickupField(scene);
 const grenades = new GrenadePool(scene);
 const blood = new BloodPool(scene);
@@ -63,7 +64,7 @@ let started = false;
 let runT = 0, kills = 0, deathShown = false, prevHp = 3;
 const still = { t: 0 };
 const mods = { telegraphMul: 1, enemyFireMul: 1 };
-const UTERO_SPOTS = [[-11, -11], [11, 11]];
+const UTERO_SPOTS = [[-15, -15], [15, 15]];
 function spawnEnemy(kind, x, z, opts = {}) {
   const e = kind === 'sentinel' ? new Sentinel(scene, telegraph, x, z)
     : kind === 'orbe' ? new Orbe(scene, telegraph, x, z)
@@ -88,10 +89,11 @@ const fx = {
   shake(amp, dur = 0.1) { rig.shake(amp, dur); }
 };
 fx.onWaveClear = () => { draftPending = 1.4; }; // SILÊNCIO + loot antes da escolha
+// andares: troca MANUAL pela escada sul (círculo dourado) — a onda continua
 const director = new Director(fx);
 // mercado já viu coisa: manchas antigas pelo piso
 for (let i = 0; i < 9; i++) {
-  blood.splatter((Math.random() - 0.5) * 20, (Math.random() - 0.5) * 20, 0.5 + Math.random());
+  blood.splatter((Math.random() - 0.5) * 28, (Math.random() - 0.5) * 28, 0.5 + Math.random());
 }
 
 // loja (DOM mínimo, jogo pausa aberto)
@@ -130,7 +132,13 @@ function resetRun() {
   mods.telegraphMul = 1; mods.enemyFireMul = 1;
   still.t = 0; hitstopT = 0; firing = false;
   runT = 0; kills = 0; deathShown = false; prevHp = 3;
-  taken.clear(); draftPending = 0; charging = false; closeDraft();
+  taken.clear(); draftPending = 0; charging = false; closeDraft(); stairCd = 0;
+  if (currentTheme !== 'loja') { // recomeça sempre no térreo
+    room.dispose();
+    room = new Room(scene, shards, 'loja');
+    fx.room = room;
+    currentTheme = 'loja';
+  }
   director.reset();
   document.getElementById('toasts').innerHTML = '';
   setLowHp(false);
@@ -187,6 +195,7 @@ const aimPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const aimPoint = new THREE.Vector3(2, 0, 0);
 let firing = false;
 let triggerEdge = false, charging = false, chargeT = 0, chargeFull = false;
+let stairCd = 0;
 addEventListener('pointermove', e => {
   mouse.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
 });
@@ -352,6 +361,28 @@ draftDiv.addEventListener('click', e => {
   if (b) pickDraft(+b.dataset.pick);
 });
 
+// troca de andar: fade, aspira sobras, rebuilda o mercado no outro tema
+function swapFloor(theme) {
+  const fade = document.getElementById('fade');
+  fade.style.opacity = '1';
+  toast(theme === 'estoque' ? 'SUBINDO — ESTOQUE' : 'DESCENDO — TÉRREO');
+  setTimeout(() => {
+    pickups.collectAll(player);
+    room.dispose();
+    blood.clear();
+    telegraph.clearAll();
+    bullets.deactivateAll();
+    grenades.deactivateAll();
+    room = new Room(scene, shards, theme);
+    fx.room = room;
+    currentTheme = theme;
+    player.pos.set(0, 0, 13); // sai da escada sul
+    player.vel.set(0, 0, 0);
+    rig.target.copy(player.pos);
+    fade.style.opacity = '0';
+  }, 280);
+}
+
 function loop() {
   requestAnimationFrame(loop);
   const rawDt = Math.min(clock.getDelta(), 0.05);
@@ -366,12 +397,23 @@ function loop() {
 
     if (!dead && player.vel.length() < 0.6) still.t += rawDt; else still.t = 0;
 
+    // escada: pisou no círculo dourado, trocou de andar (4s de trava anti-pingue)
+    stairCd = Math.max(0, stairCd - rawDt);
+    if (!dead && stairCd <= 0 && room.stairs) {
+      const sdx = player.pos.x - room.stairs.x, sdz = player.pos.z - room.stairs.z;
+      if (sdx * sdx + sdz * sdz < 1.6 * 1.6) {
+        stairCd = 4;
+        swapFloor(currentTheme === 'loja' ? 'estoque' : 'loja');
+      }
+    }
+
     const attached = enemies.filter(e => e.kind === 'parasita' && e.attached && !e.dead).length;
     player.speedMul = Math.pow(0.85, attached) * (charging ? 0.6 : 1);
     player.dashPenalty = attached * 0.5;
 
     const wasReloading = player.reloading > 0;
     player.update(dt, input, aimPoint);
+    player.holo.quaternion.copy(rig.camera.quaternion); // holograma encara a câmera
     if (wasReloading && player.reloading <= 0) sfx('reloadDone');
     collideWorld(room, player.pos, 0.4);
     rig.target.copy(player.pos);
@@ -430,7 +472,16 @@ function loop() {
     grenades.update(dt, player, room, fx);
     collideSlugs();
     shards.update(dt);
-    pickups.update(dt, player, kind => { toast(kind === 'nucleo' ? '◆ NÚCLEO' : '+1 sucata'); sfx(kind === 'nucleo' ? 'nucleo' : 'sucata'); });
+    pickups.update(dt, player, kind => {
+      if (kind === 'nucleo') { toast('◆ NÚCLEO'); sfx('nucleo'); }
+      else if (kind === 'bandagem') { toast('+1 VIDA'); sfx('heal'); }
+      else { toast('+1 sucata'); sfx('sucata'); }
+    });
+    for (const l of room.pendingLoot.splice(0)) { // caixas quebradas viram drops
+      if (l.type === 'sucata') pickups.dropSucata(l);
+      else if (l.type === 'nucleo') pickups.dropNucleo(l);
+      else pickups.dropBandagem(l);
+    }
     telegraph.update(dt);
     shop.update(dt);
     for (const e of enemies) e.update(dt, player, bullets, fx);
@@ -471,10 +522,11 @@ function loop() {
       setLowHp(player.hp === 1);
       const nearShop = Math.hypot(player.pos.x - shop.pos.x, player.pos.z - shop.pos.z) < 2.6;
       if (nearShop) setPrompt(`[E] loja · ◆${player.nucleos}`);
+      else if (room.stairs && Math.hypot(player.pos.x - room.stairs.x, player.pos.z - room.stairs.z) < 3.5) setPrompt('↕ pisar = trocar de andar');
       else if (attached > 0 && player.dashCd <= 0) setPrompt('[SPACE] arrancar parasitas');
       else if (player.nucleos > 0 && !player.overcharge && player.mag <= 1) setPrompt('[Q] ◆ recarga + ★');
       else setPrompt(null);
-      setTop(`ONDA ${director.wave || '—'} · ${fmtTime(runT)}`);
+      setTop(`${currentTheme === 'loja' ? 'TÉRREO' : 'ESTOQUE'} · ONDA ${director.wave || '—'} · ${fmtTime(runT)}`);
     }
   }
   renderer.render(scene, rig.camera);

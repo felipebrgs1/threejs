@@ -35,6 +35,19 @@ export class PickupField {
       new THREE.MeshStandardMaterial({ color: GOLD, emissive: GOLD, emissiveIntensity: 1.6, roughness: 0.3 })
     ), halo, 'nucleo', pos);
   }
+  dropBandagem(pos) { // kit de primeiros socorros: cura 1 segmento
+    const m = new THREE.Mesh(
+      new THREE.BoxGeometry(0.24, 0.24, 0.24),
+      new THREE.MeshStandardMaterial({ color: 0xe8e4da, roughness: 0.6 })
+    );
+    const crossMat = new THREE.MeshBasicMaterial({ color: 0x2e9e5b });
+    const c1 = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.05, 0.02), crossMat);
+    c1.position.z = 0.125;
+    const c2 = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.16, 0.02), crossMat);
+    c2.position.z = 0.125;
+    m.add(c1, c2);
+    this._spawn(m, null, 'bandagem', pos);
+  }
   _remove(i) {
     const it = this.items[i];
     this.scene.remove(it.mesh);
@@ -43,6 +56,15 @@ export class PickupField {
   }
   clear() {
     for (let i = this.items.length - 1; i >= 0; i--) this._remove(i);
+  }
+  collectAll(player) { // troca de andar: recolhe as sobras com os limites normais
+    for (let i = this.items.length - 1; i >= 0; i--) {
+      const it = this.items[i];
+      if (it.kind === 'sucata' && player.mag < player.magSize) player.mag++;
+      else if (it.kind === 'nucleo' && player.nucleos < 3) player.nucleos++;
+      else if (it.kind === 'bandagem' && player.hp < player.maxHp) player.hp++;
+      this._remove(i);
+    }
   }
   update(dt, player, onPick) {
     for (let i = this.items.length - 1; i >= 0; i--) {
@@ -71,6 +93,11 @@ export class PickupField {
         if (player.mag >= player.magSize) continue; // pente cheio: deixa no chão
         player.mag++;
         onPick?.('sucata');
+        this._remove(i);
+      } else if (it.kind === 'bandagem') {
+        if (player.hp >= player.maxHp) continue; // cheio: deixa no chão
+        player.hp++;
+        onPick?.('bandagem');
         this._remove(i);
       } else {
         if (player.nucleos >= 3) continue; // bolso cheio: deixa no chão

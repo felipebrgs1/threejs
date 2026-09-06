@@ -134,6 +134,49 @@ export function signTex(main, sub) {
   });
 }
 
+export function crateTex() {
+  return make(128, (g, s) => {
+    g.fillStyle = '#a9804e'; g.fillRect(0, 0, s, s);
+    g.fillStyle = '#8a6538'; g.fillRect(0, s / 2 - 6, s, 12); // fita
+    g.strokeStyle = '#6e4f2a'; g.lineWidth = 4; g.strokeRect(2, 2, s - 4, s - 4);
+    g.fillStyle = '#5e4426'; g.font = 'bold 20px sans-serif';
+    g.fillText('FRÁGIL', 22, 44);
+    for (let i = 0; i < 20; i++) {
+      g.fillStyle = `rgba(60,40,20,${R(0.05, 0.15)})`;
+      g.fillRect(R(0, s), R(0, s), R(1, 4), R(1, 4));
+    }
+  });
+}
+
+export function freezerTex() {
+  return make(128, (g, s) => {
+    g.fillStyle = '#e8ebee'; g.fillRect(0, 0, s, s);
+    g.fillStyle = '#c0392b'; // cruz vermelha
+    g.fillRect(s / 2 - 10, 22, 20, 56);
+    g.fillRect(s / 2 - 28, 40, 56, 20);
+    g.fillStyle = '#2a2d31'; g.font = 'bold 15px sans-serif';
+    g.fillText('EMERGÊNCIA', 14, 108);
+    g.strokeStyle = '#9aa0a8'; g.lineWidth = 4; g.strokeRect(2, 2, s - 4, s - 4);
+  });
+}
+
+export function concreteTex() {
+  return make(256, (g, s) => {
+    g.fillStyle = '#7e8287'; g.fillRect(0, 0, s, s);
+    for (let i = 0; i < 400; i++) {
+      g.fillStyle = `rgba(${Math.random() < 0.5 ? '40,42,46' : '160,164,168'},${R(0.04, 0.12)})`;
+      g.fillRect(R(0, s), R(0, s), R(1, 5), R(1, 5));
+    }
+    g.strokeStyle = '#5e6266'; g.lineWidth = 3; // juntas de dilatação
+    g.beginPath(); g.moveTo(s / 2, 0); g.lineTo(s / 2, s); g.stroke();
+    g.beginPath(); g.moveTo(0, s / 2); g.lineTo(s, s / 2); g.stroke();
+    g.fillStyle = 'rgba(30,30,34,.25)'; // manchas de óleo
+    for (let i = 0; i < 5; i++) {
+      g.beginPath(); g.arc(R(0, s), R(0, s), R(4, 14), 0, 7); g.fill();
+    }
+  });
+}
+
 export function posterTex(i) {
   const bg = ['#c0392b', '#e6a817', '#1d4e89'][i % 3];
   return make(128, (g, s) => {

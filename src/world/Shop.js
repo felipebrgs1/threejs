@@ -5,7 +5,7 @@ import * as THREE from 'three';
 const GOLD = 0xffc857;
 
 export class Shop {
-  constructor(scene, x = -11, z = 10) {
+  constructor(scene, x = -14, z = 13) {
     this.pos = new THREE.Vector3(x, 0, z);
     this.group = new THREE.Group();
     this.group.position.copy(this.pos);
