@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ISO Roguelike — Protótipo v0.1</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <div id="vignette-low"></div>
+  <div id="vignette-dmg"></div>
+  <div id="top"></div>
+  <div id="banner" class="hidden"></div>
+  <div id="prompt" class="hidden"></div>
+  <div id="toasts"></div>
+  <div id="shop" class="hidden"></div>
+  <div id="start">
+    <h1>SUCATA</h1>
+    <p class="tag">sobreviva às ondas · cada tiro tem massa</p>
+    <div class="controls">WASD mover · mouse mirar · click atirar · SPACE dash · R recarregar<br>Q usar ◆ · E loja · M som · dash arranca parasita · parado atrai granada</div>
+    <button id="startBtn">entrar na arena</button>
+    <p class="seed">seed 1337</p>
+  </div>
+  <div id="death" class="hidden">
+    <h1>DESMONTE</h1>
+    <p id="deathStats"></p>
+    <button id="retryBtn">[R] nova run</button>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
